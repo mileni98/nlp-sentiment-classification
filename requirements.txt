@@ -1,6 +1,0 @@
-mlflow
-numpy
-pandas
-datasets
-scikit-learn
-transformers
