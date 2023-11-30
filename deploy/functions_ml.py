@@ -1,4 +1,5 @@
 # functions_ml.py - Contains functions needed for ml model prediction with fast api
+import os
 import re
 import mlflow
 import contractions
@@ -12,14 +13,14 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords, wordnet
 
 
-def set_mlflow_experiment(tracking_url, experiment_name):
-    """Set up the mlflow experiment"""
-
-    # Set the tracking uri to the mlflow server
-    mlflow.set_tracking_uri(tracking_url)
-
-    # Set the current active experiment and return the experiment metadata
-    return mlflow.set_experiment(experiment_name)
+#def set_mlflow_experiment(tracking_url, experiment_name):
+#    """Set up the mlflow experiment"""
+#
+#    # Set the tracking uri to the mlflow server
+#    mlflow.set_tracking_uri(tracking_url)
+#
+#    # Set the current active experiment and return the experiment metadata
+#    return mlflow.set_experiment(experiment_name)
 
 
 def ml_clean_text(sentence):  
@@ -109,20 +110,23 @@ def ml_preprocess_input(sentence):
     # Tokenize and remove stop words
     tokens = ml_tokenize_and_remove_stop(sentence, True)
 
-    # Lematize tokens with POS
-    return ml_lemmatization(tokens)
-    
+    # Lemmatize tokens with POS
+    lemmatized_tokens = ml_lemmatization(tokens)
 
-def ml_load_model(model_name, model_version):
-    """Load the model from mlflow using its name and version"""
+    # Combine lemmatized tokens into a string
+    processed_sentence = ' '.join(lemmatized_tokens)
 
-    # Construct URI for logged mlflow model using the provided name and version
-    model_uri = f"models:/{model_name}/{model_version}"
+    return processed_sentence
+
+
+def ml_load_model(model_name):
+    """Load the model from specified folder name"""
+
+    # Get the path to the model
+    model_uri = f"{os.getcwd()}/{model_name}"
 
     # Load the mlflow model using the constructed URI
-    loaded_model = mlflow.sklearn.load_model(model_uri)
-
-    return loaded_model
+    return mlflow.sklearn.load_model(model_uri)
 
 
 def ml_vectorize_data(X_train, max_feature_no):
@@ -152,14 +156,14 @@ def ml_prepare_vectorizer(csv_name, path, tfidf_max_feature_no):
     return vectorizer
 
 
-def ml_predict_sentiment(sentence, model_name, model_version, csv_name, path, tfidf_max_feature_no):
+def ml_predict_sentiment(sentence, model_name, csv_name, path, tfidf_max_feature_no):
     """Predict the sentiment of a sentence using a trained model."""
 
     # Preprocess the input sentence
     sentence = ml_preprocess_input(sentence)
 
     # Load the trained mlflow model
-    loaded_model_ml = ml_load_model(model_name, model_version)
+    loaded_model_ml = ml_load_model(model_name)
 
     # Fit the vectorizer on training data
     vectorizer = ml_prepare_vectorizer(csv_name, path, tfidf_max_feature_no)
@@ -173,6 +177,6 @@ def ml_predict_sentiment(sentence, model_name, model_version, csv_name, path, tf
     # Map predictions to 'positive' or 'negative'
     sentiment = 'positive' if prediction == 1 else 'negative'
 
-    return sentiment
+    return sentiment, sentence
 
 
